@@ -1037,11 +1037,13 @@ void IrrDriver::renderShadows()
 
         if (CVS->isARBTextureViewUsable())
         {
-            for (unsigned i = 0; i < 2; i++)
+            for (unsigned i = 0; i < 4; i++)
             {
+                // Note : empirically best result achieved with a sigma < 1/3 kernel radius for closest cascade
+                // Otherwise there will be a dark line between cascade
                 m_post_processing->renderGaussian6BlurLayer(m_rtts->getShadowFBO(), i,
-                    2.f * m_shadow_scales[0].first / m_shadow_scales[i].first,
-                    2.f * m_shadow_scales[0].second / m_shadow_scales[i].second);
+                    5.f * m_shadow_scales[0].first / m_shadow_scales[i].first,
+                    5.f * m_shadow_scales[0].second / m_shadow_scales[i].second);
             }
         }
         glBindTexture(GL_TEXTURE_2D_ARRAY, m_rtts->getShadowFBO().getRTT()[0]);
