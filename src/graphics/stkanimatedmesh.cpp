@@ -202,7 +202,25 @@ void STKAnimatedMesh::updateGL()
                 GLbitfield bitfield = GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT;
                 buf = glMapBufferRange(GL_ARRAY_BUFFER, offset, size, bitfield);
             }
+            scene::CSkinnedMesh *SkinnedMesh = dynamic_cast<scene::CSkinnedMesh *>(Mesh);
+            SkinnedMesh->SkinnedLastFrame = false;
+            SkinnedMesh->skinMesh(0.);
             memcpy(buf, mb->getVertices(), size);
+
+            video::S3DVertex *ptr = static_cast<video::S3DVertex *>(buf);
+            for (unsigned j = 0; j < mb->getVertexCount(); j++)
+            {
+                vector3df newpos = vector3df(0., 0., 0.);
+                for (auto tmp : SkinnedMesh->WeightInfluence[i][j])
+                {
+                    vector3df localpos;
+                    SkinnedMesh->JointMatrixes[tmp.JointIdx].transformVect(localpos, ptr[j].Pos);
+                    newpos += localpos * tmp.weight;
+                }
+                ptr[j].Pos = newpos;
+            }
+
+//            memcpy(buf, mb->getVertices(), size);
             if (!CVS->isARBBufferStorageUsable())
             {
                 glUnmapBuffer(GL_ARRAY_BUFFER);
