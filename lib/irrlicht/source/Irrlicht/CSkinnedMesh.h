@@ -198,7 +198,9 @@ private:
 		f32 FramesPerSecond;
 
 		f32 LastAnimatedFrame;
+public:
 		bool SkinnedLastFrame;
+private:
 
 		E_INTERPOLATION_MODE InterpolationMode:8;
 

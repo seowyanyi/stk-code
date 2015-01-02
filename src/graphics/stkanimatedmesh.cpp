@@ -12,6 +12,7 @@
 #include "graphics/camera.hpp"
 #include "utils/profiler.hpp"
 #include "utils/cpp2011.hpp"
+#include "../lib/irrlicht/source/Irrlicht/CSkinnedMesh.h"
 
 using namespace irr;
 
@@ -133,6 +134,11 @@ void STKAnimatedMesh::updateGL()
 
     if (!isGLInitialized)
     {
+        // Retrieve idle pose
+        scene::CSkinnedMesh *SkinnedMesh = dynamic_cast<scene::CSkinnedMesh *>(Mesh);
+        SkinnedMesh->SkinnedLastFrame = false;
+        SkinnedMesh->skinMesh(0.);
+
         for (u32 i = 0; i < m->getMeshBufferCount(); ++i)
         {
             scene::IMeshBuffer* mb = Mesh->getMeshBuffer(i);
