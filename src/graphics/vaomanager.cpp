@@ -57,63 +57,43 @@ VAOManager::~VAOManager()
 
 }
 
+static void
+resizeBufferIfNecessary(size_t &lastIndex, size_t newLastIndex, size_t bufferSize, size_t stride, GLenum type, GLuint &id, void *&Pointer)
+{
+    if (newLastIndex * stride >= bufferSize)
+    {
+        while (newLastIndex >= bufferSize)
+            bufferSize = 2 * bufferSize + 1;
+        GLuint newVBO;
+        glGenBuffers(1, &newVBO);
+        glBindBuffer(type, newVBO);
+        if (CVS->isARBBufferStorageUsable())
+        {
+            glBufferStorage(type, bufferSize *stride, 0, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
+            Pointer = glMapBufferRange(type, 0, bufferSize * stride, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
+        }
+        else
+            glBufferData(type, bufferSize * stride, 0, GL_DYNAMIC_DRAW);
+
+        if (id)
+        {
+            // Copy old data
+            GLuint oldVBO = id;
+            glBindBuffer(GL_COPY_WRITE_BUFFER, newVBO);
+            glBindBuffer(GL_COPY_READ_BUFFER, oldVBO);
+            glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, 0, lastIndex * stride);
+            glDeleteBuffers(1, &oldVBO);
+        }
+        id = newVBO;
+    }
+    lastIndex = newLastIndex;
+}
+
 void VAOManager::regenerateBuffer(enum VTXTYPE tp, size_t newlastvertex, size_t newlastindex)
 {
     glBindVertexArray(0);
-
-    if (newlastindex >= RealVBOSize[tp])
-    {
-        while (newlastindex >= RealVBOSize[tp])
-            RealVBOSize[tp] = 2 * RealVBOSize[tp] + 1;
-        GLuint newVBO;
-        glGenBuffers(1, &newVBO);
-        glBindBuffer(GL_ARRAY_BUFFER, newVBO);
-        if (CVS->isARBBufferStorageUsable())
-        {
-            glBufferStorage(GL_ARRAY_BUFFER, RealVBOSize[tp] * getVertexPitch(tp), 0, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
-            VBOPtr[tp] = glMapBufferRange(GL_ARRAY_BUFFER, 0, RealVBOSize[tp] * getVertexPitch(tp), GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
-        }
-        else
-            glBufferData(GL_ARRAY_BUFFER, RealVBOSize[tp] * getVertexPitch(tp), 0, GL_DYNAMIC_DRAW);
-
-        if (vbo[tp])
-        {
-            GLuint oldVBO = vbo[tp];
-            glBindBuffer(GL_COPY_WRITE_BUFFER, newVBO);
-            glBindBuffer(GL_COPY_READ_BUFFER, oldVBO);
-            glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, 0, last_vertex[tp] * getVertexPitch(tp));
-            glDeleteBuffers(1, &oldVBO);
-        }
-        vbo[tp] = newVBO;
-    }
-    last_vertex[tp] = newlastvertex;
-
-    if (newlastindex >= RealIBOSize[tp])
-    {
-        while (newlastindex >= RealIBOSize[tp])
-            RealIBOSize[tp] = 2 * RealIBOSize[tp] + 1;
-        GLuint newIBO;
-        glGenBuffers(1, &newIBO);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, newIBO);
-        if (CVS->isARBBufferStorageUsable())
-        {
-            glBufferStorage(GL_ELEMENT_ARRAY_BUFFER, RealIBOSize[tp] * sizeof(u16), 0, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
-            IBOPtr[tp] = glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, 0, RealIBOSize[tp] * sizeof(u16), GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
-        }
-        else
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, RealIBOSize[tp] * sizeof(u16), 0, GL_STATIC_DRAW);
-
-        if (ibo[tp])
-        {
-            GLuint oldIBO = ibo[tp];
-            glBindBuffer(GL_COPY_WRITE_BUFFER, newIBO);
-            glBindBuffer(GL_COPY_READ_BUFFER, oldIBO);
-            glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, 0, last_index[tp] * sizeof(u16));
-            glDeleteBuffers(1, &oldIBO);
-        }
-        ibo[tp] = newIBO;
-    }
-    last_index[tp] = newlastindex;
+    resizeBufferIfNecessary(last_vertex[tp], newlastvertex, RealVBOSize[tp], getVertexPitch(tp), GL_ARRAY_BUFFER, vbo[tp], VBOPtr[tp]);
+    resizeBufferIfNecessary(last_index[tp], newlastindex, RealIBOSize[tp], sizeof(u16), GL_ELEMENT_ARRAY_BUFFER, ibo[tp], IBOPtr[tp]);
 }
 
 void VAOManager::regenerateVAO(enum VTXTYPE tp)
@@ -338,6 +318,7 @@ std::pair<unsigned, unsigned> VAOManager::getBaseSkinned(scene::IMeshBuffer *mb)
     VTXTYPE tp = getVTXTYPE(mb->getVertexType());
     if (mappedBaseVertexSkinned[tp].find(mb) == mappedBaseVertexSkinned[tp].end())
     {
+        assert(mappedBaseIndexSkinned[tp].find(mb) == mappedBaseIndexSkinned[tp].end());
         // TODO
     }
 
