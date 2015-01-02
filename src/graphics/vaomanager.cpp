@@ -332,3 +332,20 @@ std::pair<unsigned, unsigned> VAOManager::getBase(scene::IMeshBuffer *mb)
     assert(It != mappedBaseIndex[tp].end());
     return std::pair<unsigned, unsigned>(vtx, It->second);
 }
+
+std::pair<unsigned, unsigned> VAOManager::getBaseSkinned(scene::IMeshBuffer *mb)
+{
+    VTXTYPE tp = getVTXTYPE(mb->getVertexType());
+    if (mappedBaseVertexSkinned[tp].find(mb) == mappedBaseVertexSkinned[tp].end())
+    {
+        // TODO
+    }
+
+    std::unordered_map<scene::IMeshBuffer*, unsigned>::iterator It;
+    It = mappedBaseVertexSkinned[tp].find(mb);
+    assert(It != mappedBaseVertexSkinned[tp].end());
+    unsigned vtx = It->second;
+    It = mappedBaseIndexSkinned[tp].find(mb);
+    assert(It != mappedBaseIndexSkinned[tp].end());
+    return std::pair<unsigned, unsigned>(vtx, It->second);
+}

@@ -164,7 +164,7 @@ void STKAnimatedMesh::updateGL()
 
             if (CVS->isARBBaseInstanceUsable())
             {
-                std::pair<unsigned, unsigned> p = VAOManager::getInstance()->getBase(mb);
+                std::pair<unsigned, unsigned> p = VAOManager::getInstance()->getBaseSkinned(mb);
                 mesh.vaoBaseVertex = p.first;
                 mesh.vaoOffset = p.second;
             }
@@ -220,7 +220,6 @@ void STKAnimatedMesh::updateGL()
                 ptr[j].Pos = newpos;
             }
 
-//            memcpy(buf, mb->getVertices(), size);
             if (!CVS->isARBBufferStorageUsable())
             {
                 glUnmapBuffer(GL_ARRAY_BUFFER);
